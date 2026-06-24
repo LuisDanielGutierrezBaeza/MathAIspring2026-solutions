@@ -9,8 +9,8 @@ Las soluciones matemáticas y las implementaciones en Python presentadas aquí s
 
 ## 📁 Estructura del Repositorio
 
-* 📁 **[assignment-01/](./assignment-01/)** - Redes Feedforward y Dataset MNIST
-* 📁 **[assignment-02/](./assignment-02/)** - Descomposición en Valores Singulares (SVD)
-* 📁 **[assignment-03/](./assignment-03/)** - Distribución Normal Multivariada y Divergencia KL
-* 📁 **[assignment-04/](./assignment-04/)** - Dilema Sesgo-Varianza y Descenso de Gradiente Estocástico
-* 📁 **[assignment-05/](./assignment-05/)** - Backpropagation, CNNs y Modelos Generativos (VAEs)
+* 📄 **[Asignación 1 - Redes Feedforward y Dataset MNIST](./docs/Asignacion_1.pdf)** *
+* 📄 **[Asignación 2 - Descomposición en Valores Singulares (SVD)](./docs/Asignacion_2.pdf)** *
+* 📄 **[Asignación 3 - Distribución Normal Multivariada y Divergencia KL](./docs/Asignacion_3.pdf)** *
+* 📄 **[Asignación 4 - Dilema Sesgo-Varianza y Descenso de Gradiente Estocástico](./docs/Asignacion_4.pdf)** *
+* 📄 **[Asignación 5 - Backpropagation, CNNs y Modelos Generativos](./docs/Asignacion_5%20(1).pdf)** ```
