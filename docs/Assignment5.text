@@ -1,0 +1,128 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{setspace}
+\usepackage[spanish]{babel}
+\singlespacing
+
+\title{5ta Asignación: Fundamentos Profundos y Modelos Generativos}
+\author{Luis Daniel Gutierrez Baeza}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{center}
+\fbox{
+\begin{minipage}{0.9\textwidth}
+\small \textbf{Nota de Integridad Académica:} El planteamiento de los problemas y la estructura general de esta asignación provienen del curso \textit{MAT 4953/6973 Mathematical Foundations of AI} (Dr. Eduardo Dueñez, UTSA). Las derivaciones matemáticas (como Backpropagation y ELBO), la redacción técnica y las reflexiones presentadas son de elaboración propia, desarrolladas como parte de mi formación en Matemáticas Aplicadas y Computación.
+\end{minipage}
+}
+\end{center}
+\vspace{0.5cm}
+
+\section*{Tarea de Calentamiento: Reflexión Final sobre Escritura Técnica}
+Mirando hacia atrás a mi primera asignación, un defecto importante en mi escritura matemática era la tendencia a presentar ecuaciones aisladas sin texto conectivo lógico, obligando al lector a adivinar las transiciones. Por ejemplo, en una demostración inicial, escribí: \textit{"$Wx + b = z$, $a = \sigma(z)$, entonces obtenemos la salida."} Esto carecía de rigor y de la definición de los dominios. Desde entonces, he trabajado activamente en la integración de ecuaciones en oraciones completas y gramaticalmente correctas, indicando explícitamente las dimensiones. Un ejemplo reciente de esta mejora en mi trabajo es: \textit{"Sea $x \in \mathbb{R}^{d_{in}}$ el vector de entrada. El vector de pre-activación $z \in \mathbb{R}^{d_{out}}$ se calcula mediante la transformación afín $z = Wx + b$, donde $W$ es la matriz de pesos. Luego aplicamos la función de activación no lineal $\sigma(\cdot)$ elemento a elemento para obtener $a = \sigma(z)$."} 
+No obstante, un problema nuevo que he notado a medida que el material se vuelve más complejo algorítmicamente es mi abuso de la voz pasiva al describir pasos computacionales. En el futuro, quiero impulsar mi escritura para que sea más activa y directa, delineando claramente entre definiciones matemáticas e implementaciones de código.
+
+\section*{Sub-Tarea I: Unidades, Activaciones y el Forward Pass}
+\subsection*{Ejercicio 4.1: Conteo de Parámetros}
+En una red neuronal feedforward completamente conectada (densa), el número de parámetros aprendibles en una capa dada depende estrictamente de la dimensionalidad de su entrada y salida. Sea $d_{in}$ el número de neuronas en la capa anterior y $d_{out}$ el número de neuronas en la capa actual. La capa calcula $z = Wx + b$.
+La matriz de pesos $W$ tiene dimensiones $d_{out} \times d_{in}$, aportando $d_{out} \cdot d_{in}$ parámetros. El vector sesgo $b$ tiene dimensión $d_{out}$, aportando $d_{out}$ parámetros. 
+Por tanto, la fórmula general para una sola capa es:
+\begin{equation}
+    P = (d_{in} \times d_{out}) + d_{out} = d_{out}(d_{in} + 1)
+\end{equation}
+
+\textbf{Aplicación a MNIST:}
+Para el conjunto de datos MNIST, las imágenes de entrada son de $28 \times 28$ píxeles, lo que significa que el vector de entrada aplanado tiene $d_{in} = 784$.
+\begin{itemize}
+    \item Para una capa oculta de ancho 64 ($d_{out} = 64$):
+    $P_{64} = 64(784 + 1) = 64(785) = 50,240 \text{ parámetros.}$
+    \item Para una capa oculta de ancho 128 ($d_{out} = 128$):
+    $P_{128} = 128(784 + 1) = 128(785) = 100,480 \text{ parámetros.}$
+\end{itemize}
+Como se demuestra, duplicar el ancho de la capa duplica exactamente el recuento de parámetros, ya que la relación es estrictamente lineal con respecto a $d_{out}$.
+
+\begin{figure}[h!]
+    \centering
+    % \includegraphics[width=0.6\textwidth]{figures/fig1_activations.png}
+    \caption{Comparación de funciones de activación comunes. \textit{Imagen generada por IA mediante el prompt: "A clean, minimalist 2D mathematical diagram showing the graphs of three neural network activation functions: Sigmoid, ReLU, and Tanh..."}}
+    \label{fig:activations}
+\end{figure}
+
+\section*{Sub-Tarea II: Backpropagation}
+\subsection*{Ejercicio 4.1: Derivación de la Fórmula de Error de Salida}
+Deseamos derivar el gradiente del error de salida $\delta^{(L)} = \hat{\mathbf{y}} - \mathbf{y}$ para una red que utiliza una capa de salida softmax y una función de pérdida de entropía cruzada. 
+Sea $z_i$ los logits no normalizados producidos por la capa final. La función softmax los convierte en probabilidades predichas $\hat{y}_i$:
+\begin{equation}
+    \hat{y}_i = \frac{e^{z_i}}{\sum_{j} e^{z_j}}
+\end{equation}
+La pérdida de entropía cruzada para una sola observación con etiqueta verdadera $y$ (one-hot) es:
+\begin{equation}
+    \mathcal{L} = - \sum_{k} y_k \log(\hat{y}_k)
+\end{equation}
+Necesitamos la derivada de la pérdida respecto al logit $z_i$, denotada como $\delta^{(L)}_i = \frac{\partial \mathcal{L}}{\partial z_i}$. Usando la regla de la cadena multivariable:
+\begin{equation}
+    \frac{\partial \mathcal{L}}{\partial z_i} = \sum_{k} \frac{\partial \mathcal{L}}{\partial \hat{y}_k} \frac{\partial \hat{y}_k}{\partial z_i}
+\end{equation}
+Primero, la derivada de la pérdida respecto a la salida es $\frac{\partial \mathcal{L}}{\partial \hat{y}_k} = - \frac{y_k}{\hat{y}_k}$.
+Segundo, la derivada de la función softmax $\frac{\partial \hat{y}_k}{\partial z_i}$ tiene dos casos:
+Cuando $k = i$: $\frac{\partial \hat{y}_i}{\partial z_i} = \hat{y}_i(1 - \hat{y}_i)$. 
+Cuando $k \neq i$: $\frac{\partial \hat{y}_k}{\partial z_i} = -\hat{y}_k \hat{y}_i$.
+
+Sustituyendo esto en la expresión de la regla de la cadena:
+\begin{align*}
+    \frac{\partial \mathcal{L}}{\partial z_i} &= \left( - \frac{y_i}{\hat{y}_i} \right) \hat{y}_i(1 - \hat{y}_i) + \sum_{k \neq i} \left( - \frac{y_k}{\hat{y}_k} \right) (-\hat{y}_k \hat{y}_i) \\
+    &= -y_i + y_i\hat{y}_i + \sum_{k \neq i} y_k \hat{y}_i = -y_i + \hat{y}_i \left( y_i + \sum_{k \neq i} y_k \right)
+\end{align*}
+Dado que $y$ es una distribución de probabilidad válida, la suma de todos sus elementos es $1$ ($\sum_{k} y_k = 1$).
+Así, $\frac{\partial \mathcal{L}}{\partial z_i} = -y_i + \hat{y}_i(1) = \hat{y}_i - y_i$. 
+En forma vectorial, el error de salida se reduce elegantemente a:
+\begin{equation}
+    \delta^{(L)} = \hat{\mathbf{y}} - \mathbf{y}
+\end{equation}
+
+\section*{Sub-Tarea IV: Modelos Generativos}
+\subsection*{Ejercicio 1: Derivación del ELBO}
+En los Autoencoders Variacionales (VAEs), el objetivo es maximizar la log-verosimilitud marginal de los datos $\log p_\theta(x)$. Dado que el cálculo directo es intratable debido a la integral sobre el espacio latente $z$, introducimos un posterior aproximado $q_\phi(z|x)$ y utilizamos la desigualdad de Jensen para construir la Cota Inferior de Evidencia (ELBO).
+
+Comenzando con la log-verosimilitud:
+\begin{equation}
+    \log p_\theta(x) = \log \int p_\theta(x, z) dz = \log \int p_\theta(x, z) \frac{q_\phi(z|x)}{q_\phi(z|x)} dz
+\end{equation}
+Esto puede reescribirse como una esperanza sobre el posterior aproximado:
+\begin{equation}
+    \log p_\theta(x) = \log \mathbb{E}_{q_\phi(z|x)} \left[ \frac{p_\theta(x, z)}{q_\phi(z|x)} \right]
+\end{equation}
+Debido a que el logaritmo es una función estrictamente cóncava, podemos aplicar la Desigualdad de Jensen ($\log \mathbb{E}[f(z)] \geq \mathbb{E}[\log f(z)]$), obteniendo el ELBO:
+\begin{equation}
+    \log p_\theta(x) \geq \mathbb{E}_{q_\phi(z|x)} \left[ \log \frac{p_\theta(x, z)}{q_\phi(z|x)} \right] \equiv \text{ELBO}
+\end{equation}
+
+\textbf{Demostrando que la Brecha equivale a la Divergencia KL:}
+Para comprender qué se pierde en esta aproximación, calculamos la diferencia entre la log-verosimilitud verdadera y el ELBO. Note que $p_\theta(x,z) = p_\theta(z|x)p_\theta(x)$.
+\begin{align*}
+    \log p_\theta(x) - \text{ELBO} &= \log p_\theta(x) - \mathbb{E}_{q_\phi(z|x)} \left[ \log \frac{p_\theta(z|x)p_\theta(x)}{q_\phi(z|x)} \right] \\
+    &= \log p_\theta(x) - \mathbb{E}_{q_\phi(z|x)} \left[ \log p_\theta(x) + \log \frac{p_\theta(z|x)}{q_\phi(z|x)} \right]
+\end{align*}
+Dado que $\log p_\theta(x)$ no depende de $z$, su esperanza es simplemente sí misma, permitiendo que se cancele:
+\begin{align*}
+    \log p_\theta(x) - \text{ELBO} &= \mathbb{E}_{q_\phi(z|x)} \left[ - \log \frac{p_\theta(z|x)}{q_\phi(z|x)} \right] = \mathbb{E}_{q_\phi(z|x)} \left[ \log \frac{q_\phi(z|x)}{p_\theta(z|x)} \right]
+\end{align*}
+Por definición, esta esperanza es la divergencia Kullback-Leibler (KL) entre el posterior aproximado y el posterior verdadero. Así, la brecha es exactamente:
+\begin{equation}
+    D_{KL}(q_\phi(z|x) || p_\theta(z|x))
+\end{equation}
+
+\begin{figure}[h!]
+    \centering
+    % \includegraphics[width=0.6\textwidth]{figures/fig2_vae.png}
+    \caption{Arquitectura conceptual de un Autoencoder Variacional (VAE). \textit{Imagen generada por IA mediante el prompt: "A conceptual diagram illustrating a Variational Autoencoder (VAE)..."}}
+    \label{fig:vae}
+\end{figure}
+
+\end{document}
