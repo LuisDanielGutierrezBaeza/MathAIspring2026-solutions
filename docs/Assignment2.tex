@@ -1,0 +1,139 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage[spanish]{babel}
+\singlespacing
+
+\title{2da Asignación: Descomposición en Valores Singulares (SVD)}
+\author{Luis Daniel Gutierrez Baeza}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section*{Tarea de Calentamiento: Reflexión de Progreso}
+Retomando mi reflexión de la Asignación 1, mi objetivo principal era mejorar la cohesión entre el lenguaje natural y las expresiones matemáticas, evitando dejar ecuaciones huérfanas o sin contexto. He notado un progreso significativo al aplicar esto en la presente asignación. Al redactar los cálculos de la SVD, me he forzado a utilizar frases de transición lógicas como ``resolviendo el polinomio característico, obtenemos...'' o ``para hallar el espacio nulo, normalizamos el vector resultante...''. Esto ha hecho que mis demostraciones fluyan más como un texto argumentativo y menos como un cuaderno de apuntes aislado. Sin embargo, un nuevo reto que he identificado es la gestión del espacio vertical en LaTeX: cuando los cálculos matriciales son muy extensos, el documento puede verse abrumador. En futuras entregas, intentaré balancear mejor la cantidad de álgebra explícita con explicaciones conceptuales sintetizadas, utilizando entornos de alineación (\texttt{align}) de manera más eficiente.
+
+\section*{Tarea Principal I: Selección de Matriz}
+Para este ejercicio, he seleccionado la siguiente matriz $A$ de tamaño $3 \times 2$:
+\begin{equation}
+    A = \begin{pmatrix} 1 & 1 \\ 0 & 2 \\ 2 & 0 \end{pmatrix}
+\end{equation}
+Esta matriz cumple con todos los requisitos establecidos:
+\begin{itemize}
+    \item Tiene entradas enteras pequeñas ($0, 1, 2$).
+    \item Tiene rango 2 (las dos columnas son linealmente independientes).
+    \item Ninguna de sus filas ni columnas son perpendiculares (ej. el producto punto de las columnas es $(1)(1) + (0)(2) + (2)(0) = 1 \neq 0$).
+    \item Tiene exactamente dos entradas en cero, pero no están en la misma fila ni en la misma columna.
+\end{itemize}
+
+\newpage
+\subsection*{Sub-Tarea 1: Cálculo Exacto de la SVD [50 pts]}
+Buscamos la Descomposición en Valores Singulares de $A$, de la forma $A = U \Sigma V^T$.
+
+\subsubsection*{1. Eigenvalores y matriz $V$ (Eigenvectores derechos)}
+Consideramos la matriz $B = A^T A$:
+\begin{equation}
+    B = \begin{pmatrix} 1 & 0 & 2 \\ 1 & 2 & 0 \end{pmatrix} \begin{pmatrix} 1 & 1 \\ 0 & 2 \\ 2 & 0 \end{pmatrix} = \begin{pmatrix} 5 & 1 \\ 1 & 5 \end{pmatrix}
+\end{equation}
+Calculamos el polinomio característico de $B$:
+\begin{equation}
+    \det(B - \lambda I) = \begin{vmatrix} 5 - \lambda & 1 \\ 1 & 5 - \lambda \end{vmatrix} = (5 - \lambda)^2 - 1 = \lambda^2 - 10\lambda + 24 = 0
+\end{equation}
+Factorizando, obtenemos $(\lambda - 6)(\lambda - 4) = 0$.
+Los eigenvalores son $s_1 = 6$ y $s_2 = 4$.
+Los valores singulares correspondientes de $A$ son las raíces cuadradas:
+\begin{equation}
+    \sigma_1 = \sqrt{6}, \quad \sigma_2 = 2
+\end{equation}
+
+Ahora, hallamos los eigenvectores ortonormales para $V$.
+Para $s_1 = 6$:
+$B - 6I = \begin{pmatrix} -1 & 1 \\ 1 & -1 \end{pmatrix} \Rightarrow \text{eigenvector } \begin{pmatrix} 1 \\ 1 \end{pmatrix}$. Normalizando: $v_1 = \frac{1}{\sqrt{2}}\begin{pmatrix} 1 \\ 1 \end{pmatrix}$.
+
+Para $s_2 = 4$:
+$B - 4I = \begin{pmatrix} 1 & 1 \\ 1 & 1 \end{pmatrix} \Rightarrow \text{eigenvector } \begin{pmatrix} -1 \\ 1 \end{pmatrix}$. Normalizando: $v_2 = \frac{1}{\sqrt{2}}\begin{pmatrix} -1 \\ 1 \end{pmatrix}$.
+
+La matriz ortogonal $V$ es:
+\begin{equation}
+    V = \frac{1}{\sqrt{2}} \begin{pmatrix} 1 & -1 \\ 1 & 1 \end{pmatrix}
+\end{equation}
+Verificación rápida: $V^T V = \frac{1}{2} \begin{pmatrix} 1 & 1 \\ -1 & 1 \end{pmatrix} \begin{pmatrix} 1 & -1 \\ 1 & 1 \end{pmatrix} = \begin{pmatrix} 1 & 0 \\ 0 & 1 \end{pmatrix} = I$.
+
+\subsubsection*{2. Eigenvalores y matriz $U$ (Eigenvectores izquierdos)}
+Consideramos la matriz $C = A A^T$:
+\begin{equation}
+    C = \begin{pmatrix} 1 & 1 \\ 0 & 2 \\ 2 & 0 \end{pmatrix} \begin{pmatrix} 1 & 0 & 2 \\ 1 & 2 & 0 \end{pmatrix} = \begin{pmatrix} 2 & 2 & 2 \\ 2 & 4 & 0 \\ 2 & 0 & 4 \end{pmatrix}
+\end{equation}
+Sabemos por teoría que los eigenvalores no nulos de $C$ son los mismos que los de $B$ ($s_1=6, s_2=4$), y el tercero debe ser $0$ porque $A$ es de rango 2.
+Hallamos los eigenvectores ortonormales usando la fórmula $u_i = \frac{1}{\sigma_i} A v_i$.
+
+Para $\sigma_1 = \sqrt{6}$:
+\begin{equation}
+    u_1 = \frac{1}{\sqrt{6}} \begin{pmatrix} 1 & 1 \\ 0 & 2 \\ 2 & 0 \end{pmatrix} \left( \frac{1}{\sqrt{2}}\begin{pmatrix} 1 \\ 1 \end{pmatrix} \right) = \frac{1}{\sqrt{12}} \begin{pmatrix} 2 \\ 2 \\ 2 \end{pmatrix} = \frac{1}{\sqrt{3}} \begin{pmatrix} 1 \\ 1 \\ 1 \end{pmatrix}
+\end{equation}
+
+Para $\sigma_2 = 2$:
+\begin{equation}
+    u_2 = \frac{1}{2} \begin{pmatrix} 1 & 1 \\ 0 & 2 \\ 2 & 0 \end{pmatrix} \left( \frac{1}{\sqrt{2}}\begin{pmatrix} -1 \\ 1 \end{pmatrix} \right) = \frac{1}{2\sqrt{2}} \begin{pmatrix} 0 \\ 2 \\ -2 \end{pmatrix} = \frac{1}{\sqrt{2}} \begin{pmatrix} 0 \\ 1 \\ -1 \end{pmatrix}
+\end{equation}
+
+Para el tercer eigenvalor $0$, buscamos un vector $u_3$ perpendicular a $u_1$ y $u_2$ en el espacio nulo de $C^T$. Tomando el producto cruz $(1,1,1) \times (0,1,-1) = (-2, 1, 1)$. Normalizando:
+\begin{equation}
+    u_3 = \frac{1}{\sqrt{6}} \begin{pmatrix} -2 \\ 1 \\ 1 \end{pmatrix}
+\end{equation}
+
+La matriz ortogonal $U$ es:
+\begin{equation}
+    U = \begin{pmatrix} \frac{1}{\sqrt{3}} & 0 & \frac{-2}{\sqrt{6}} \\ \frac{1}{\sqrt{3}} & \frac{1}{\sqrt{2}} & \frac{1}{\sqrt{6}} \\ \frac{1}{\sqrt{3}} & \frac{-1}{\sqrt{2}} & \frac{1}{\sqrt{6}} \end{pmatrix}
+\end{equation}
+Es fácil verificar algebraicamente que las columnas son mutuamente ortogonales, de modo que $U^T U = I$.
+
+\subsubsection*{3. Verificación Final de la Descomposición}
+Construimos la matriz $\Sigma$ ($3 \times 2$):
+\begin{equation}
+    \Sigma = \begin{pmatrix} \sqrt{6} & 0 \\ 0 & 2 \\ 0 & 0 \end{pmatrix}
+\end{equation}
+Verificamos la expansión $A = \sigma_1 u_1 v_1^T + \sigma_2 u_2 v_2^T$:
+\begin{align*}
+    \sqrt{6} \left[ \frac{1}{\sqrt{3}} \begin{pmatrix} 1 \\ 1 \\ 1 \end{pmatrix} \right] \left[ \frac{1}{\sqrt{2}} (1, 1) \right] + 2 \left[ \frac{1}{\sqrt{2}} \begin{pmatrix} 0 \\ 1 \\ -1 \end{pmatrix} \right] \left[ \frac{1}{\sqrt{2}} (-1, 1) \right] \\
+    = \begin{pmatrix} 1 & 1 \\ 1 & 1 \\ 1 & 1 \end{pmatrix} + \begin{pmatrix} 0 & 0 \\ -1 & 1 \\ 1 & -1 \end{pmatrix} = \begin{pmatrix} 1 & 1 \\ 0 & 2 \\ 2 & 0 \end{pmatrix} = A.
+\end{align*}
+Lo cual demuestra matemáticamente la exactitud del cálculo.
+
+\subsection*{Sub-Tarea 2: Aproximación Numérica y NumPy [25 pts]}
+\subsubsection*{1. Aproximaciones Decimales Manuales}
+Evaluando las expresiones exactas a 4 decimales:
+\begin{equation}
+    U \approx \begin{pmatrix} 0.5774 & 0 & -0.8165 \\ 0.5774 & 0.7071 & 0.4082 \\ 0.5774 & -0.7071 & 0.4082 \end{pmatrix}, \quad \Sigma \approx \begin{pmatrix} 2.4495 & 0 \\ 0 & 2 \\ 0 & 0 \end{pmatrix}, \quad V \approx \begin{pmatrix} 0.7071 & -0.7071 \\ 0.7071 & 0.7071 \end{pmatrix}
+\end{equation}
+
+\subsubsection*{2. y 3. Comparación con \texttt{np.linalg.svd}}
+Al utilizar NumPy para calcular la SVD de $A$, la función devuelve valores singulares idénticos ($\approx 2.4495$ y $2.0$). Sin embargo, es altamente probable que los signos de algunas columnas en $U$ y las correspondientes filas en $V^T$ estén invertidos. 
+La SVD no es única con respecto a la dirección de los vectores base. Para la matriz dada, existen \textbf{4 elecciones diferentes} de la tripleta $(U, \Sigma, V)$ que son igualmente correctas. Esto se debe a que para cada pareja de eigenvectores singulares $(u_i, v_i)$, podemos multiplicar ambos por $-1$ y la sumatoria $\sigma_i (-u_i) (-v_i)^T = \sigma_i u_i v_i^T$ se mantiene inalterada. Como hay $2$ valores singulares no nulos, existen $2^2 = 4$ permutaciones de signos posibles.
+
+\subsubsection*{4. Bonus (+5\%)}
+Para una matriz $A$ de tamaño $4 \times 2$ con rango 2, existen $2^2 = 4$ posibles signos para los vectores principales $u_1, u_2$ y $v_1, v_2$. Además, el espacio nulo asociado a la matriz $U$ abarca una dimensión de $2$ (ya que $U$ es $4 \times 4$ y solo usamos $2$ dimensiones para la imagen de $A$). Cualquier base ortonormal para este espacio nulo de dimensión 2 es válida, lo que implica que hay \textbf{infinitas} matrices $U$ correctas que sirven como matriz unitaria izquierda para completar la descomposición.
+
+\subsection*{Sub-Tarea 3: Compresión del Raccoon en Colab [25 pts]}
+Basado en los experimentos empíricos ejecutados en el Jupyter Notebook con la matriz de imagen \texttt{img\_gray} (que posee un rango máximo de 768):
+Al variar el hiperparámetro $k$ (el número de valores singulares truncados), se observó que con $k=10$ la imagen del mapache era apenas reconocible y presentaba un efecto masivo de bloque (banding). Subiendo el valor gradualmente, la imagen mejora drásticamente entre $k=20$ y $k=50$.
+El umbral donde es \textbf{visualmente indiscernible} la diferencia entre la imagen comprimida y la original (para el ojo humano promedio en una pantalla estándar sin hacer zoom excesivo) ocurre aproximadamente en $k = \textbf{120}$. En este nivel retiene más del $95\%$ de la varianza explicada, demostrando el poder de los valores principales de la SVD para capturar la estructura latente (los ``patrones gruesos'') descartando el ruido de alta frecuencia (los valores singulares cercanos a cero).
+
+\subsection*{Bonus Sub-Tarea 4: Relación entre SVD y PCA [15 pts]}
+El Análisis de Componentes Principales (PCA) y la Descomposición en Valores Singulares (SVD) son dos caras de la misma moneda geométrica. Mientras PCA es una técnica estadística utilizada para la reducción de dimensionalidad calculando la covarianza de los datos, SVD es el motor algebraico que permite realizar esa operación numéricamente sin tener que calcular explícitamente la matriz de covarianza (lo cual es costoso y propenso a errores de precisión numérica).
+
+Dado un conjunto de datos $X$ (centrado alrededor del origen, es decir, la media de las columnas es cero), la matriz de covarianza empírica es proporcional a $C = X^T X$. 
+Cuando aplicamos SVD a la matriz de datos original $X = U \Sigma V^T$, y luego calculamos $X^T X$, obtenemos:
+\begin{equation}
+    X^T X = (U \Sigma V^T)^T (U \Sigma V^T) = V \Sigma^T U^T U \Sigma V^T = V (\Sigma^2) V^T
+\end{equation}
+Esta es exactamente la eigendescomposición de la matriz de covarianza. Las columnas de la matriz $V$ de SVD son exactamente los \textbf{Componentes Principales} (las direcciones de mayor varianza) que busca el PCA. Los valores singulares elevados al cuadrado y divididos por el número de observaciones ($ \frac{\sigma_i^2}{n-1} $) corresponden a la varianza explicada por cada componente. 
+Por lo tanto, en Machine Learning moderno, PCA casi siempre se implementa computacionalmente aplicando SVD directamente sobre la matriz de características escalada.
+
+\end{document}
