@@ -1,0 +1,124 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{setspace}
+\usepackage[spanish]{babel}
+\singlespacing
+
+\title{3ra Asignación: Distribuciones Multivariables y Divergencia KL}
+\author{Luis Daniel Gutierrez Baeza}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{center}
+\fbox{
+\begin{minipage}{0.9\textwidth}
+\small \textbf{Nota de Integridad Académica:} El planteamiento de los problemas, las referencias teóricas y la estructura de esta asignación provienen del curso \textit{MAT 4953/6973 Mathematical Foundations of AI} impartido por el Dr. Eduardo Dueñez en la Universidad de Texas en San Antonio (UTSA). Las soluciones, derivaciones matemáticas y reflexiones presentadas a continuación son de elaboración propia, desarrolladas como parte de mi formación en Matemáticas Aplicadas y Computación.
+\end{minipage}
+}
+\end{center}
+\vspace{0.5cm}
+
+\section*{Tarea de Calentamiento: Reflexión sobre Escritura Técnica}
+Al revisar mi progreso en la escritura técnica desde el inicio del semestre, percibo una evolución clara en mi capacidad para estructurar demostraciones probabilísticas. Inicialmente, tendía a omitir la justificación de las propiedades integrales (como la linealidad de la esperanza) asumiendo que eran "triviales", lo que resultaba en saltos lógicos confusos. Mi mayor fortaleza actual es la explicitación de las propiedades de los operadores estadísticos paso a paso antes de aplicarlos. Sin embargo, reconozco una debilidad persistente: al redactar sobre conceptos geométricos (como las formas cuadráticas multivariables en la Tarea I), a menudo confío demasiado en la formulación algebraica y proporciono poca intuición geométrica en el texto que la acompaña. Mi meta para las siguientes entregas es asegurar que cada derivación matricial esté emparejada con una descripción geométrica clara sobre lo que representa en el espacio vectorial.
+
+\section*{Tarea I: SVD y la Distribución Normal Multivariable}
+\subsection*{Relación entre la SVD de $A$ y las curvas de nivel elipsoidales}
+Sea $A$ una matriz real $n \times n$ y $S = A^T A$ su correspondiente matriz de covarianza, la cual es simétrica y semidefinida positiva. La función de densidad de probabilidad (PDF) para una variable aleatoria normal multivariable centrada en el origen está dada por:
+\begin{equation}
+    \mathcal{N}(\mathbf{x}) = \frac{\exp(-Q(\mathbf{x}))}{\sqrt{(2\pi)^n \det(S)}}
+\end{equation}
+donde la forma cuadrática es $Q(\mathbf{x}) = \frac{1}{2} \mathbf{x}^T S^{-1} \mathbf{x}$.
+
+Las curvas de nivel (isocontornos) de esta PDF ocurren cuando la densidad es constante, lo que matemáticamente equivale a establecer $Q(\mathbf{x}) = c$ para alguna constante $c > 0$. La ecuación $\mathbf{x}^T S^{-1} \mathbf{x} = 2c$ define un hiperelipsoide en $\mathbb{R}^n$.
+
+La conexión precisa con la SVD de $A$ surge al descomponer $A$. Si $A = U \Sigma V^T$, entonces:
+\begin{equation}
+    S = A^T A = (V \Sigma^T U^T)(U \Sigma V^T) = V \Sigma^2 V^T
+\end{equation}
+Esta es la eigendescomposición espectral de la matriz de covarianza $S$. Los eigenvectores de $S$ (que son las columnas de $V$, es decir, los eigenvectores singulares derechos de $A$) forman una base ortonormal para $\mathbb{R}^n$. 
+Dado que $S^{-1} = V \Sigma^{-2} V^T$, podemos reescribir la forma cuadrática aplicando un cambio de base rotacional $\mathbf{y} = V^T \mathbf{x}$:
+\begin{equation}
+    \mathbf{x}^T (V \Sigma^{-2} V^T) \mathbf{x} = (V^T \mathbf{x})^T \Sigma^{-2} (V^T \mathbf{x}) = \mathbf{y}^T \Sigma^{-2} \mathbf{y} = \sum_{i=1}^{n} \frac{y_i^2}{\sigma_i^2} = 2c
+\end{equation}
+Esta es la ecuación canónica de un elipsoide alineado con los ejes de coordenadas $\mathbf{y}$. 
+
+Por lo tanto, la relación geométrica exacta es:
+\begin{itemize}
+    \item \textbf{Direcciones de los ejes principales:} Los ejes principales del elipsoide de densidad están apuntando exactamente en las direcciones de las columnas de $V$ (los eigenvectores singulares derechos de $A$).
+    \item \textbf{Longitud de los ejes principales:} La longitud del semi-eje a lo largo del $i$-ésimo eigenvector $v_i$ es proporcional a $\sigma_i$ (específicamente, de longitud $\sqrt{2c}\sigma_i$). Así, los valores singulares más grandes de $A$ dictan las direcciones de mayor varianza (esparcimiento) de la distribución.
+\end{itemize}
+
+\subsection*{Bonus Subtask A: ¿Qué falla si $A$ es singular?}
+Si $A$ es una matriz singular, existe al menos un valor singular $\sigma_i = 0$. Por consiguiente, la matriz de covarianza $S = A^T A$ tendrá un eigenvalor nulo, lo que implica que su determinante es $\det(S) = 0$.
+Bajo estas condiciones, ocurren dos fallas críticas en la formulación de la distribución normal multivariable:
+1. El término de normalización $1 / \sqrt{(2\pi)^n \det(S)}$ diverge hacia infinito, haciendo imposible definir una densidad sobre el espacio completo $\mathbb{R}^n$.
+2. La matriz inversa $S^{-1}$ requerida para la forma cuadrática $Q(\mathbf{x})$ no existe. Geométricamente, el hiperelipsoide colapsa, volviéndose infinitamente "plano" en la dirección del eigenvector asociado a $\sigma_i = 0$, significando que la varianza en esa dirección es nula.
+
+\section*{Tarea II: Divergencia Kullback-Leibler (KL)}
+
+\subsection*{Subtask A: KL entre dos Normales Unidimensionales}
+Sea $\mathcal{N}$ la distribución normal estándar con PDF $p(x) = \frac{1}{\sqrt{2\pi}}\exp(-x^2/2)$ y $\tilde{\mathcal{N}} = \mathcal{N}_{\mu,\sigma}$ la distribución normal con PDF $q(x) = \frac{1}{\sqrt{2\pi\sigma^2}}\exp(-\frac{(x-\mu)^2}{2\sigma^2})$.
+Buscamos evaluar $D_{KL}(\mathcal{N} || \tilde{\mathcal{N}}) = \mathbb{E}_{\mathcal{N}} \left[ \log \frac{p(x)}{q(x)} \right]$.
+
+Expandiendo el logaritmo de la razón:
+\begin{align*}
+    \log \frac{p(x)}{q(x)} &= \log p(x) - \log q(x) \\
+    &= \left( -\frac{1}{2}\log(2\pi) - \frac{x^2}{2} \right) - \left( -\frac{1}{2}\log(2\pi\sigma^2) - \frac{(x-\mu)^2}{2\sigma^2} \right) \\
+    &= \frac{1}{2}\log(\sigma^2) - \frac{x^2}{2} + \frac{x^2 - 2x\mu + \mu^2}{2\sigma^2}
+\end{align*}
+
+Tomando la esperanza matemática bajo $p(x)$ y utilizando que $\mathbb{E}[1] = 1$, $\mathbb{E}[x] = 0$, y $\mathbb{E}[x^2] = 1$:
+\begin{align*}
+    D_{KL}(\mathcal{N} || \tilde{\mathcal{N}}) &= \mathbb{E}_{\mathcal{N}}\left[ \log(\sigma) - \frac{x^2}{2} + \frac{x^2}{2\sigma^2} - \frac{x\mu}{\sigma^2} + \frac{\mu^2}{2\sigma^2} \right] \\
+    &= \log(\sigma) - \frac{\mathbb{E}[x^2]}{2} + \frac{\mathbb{E}[x^2]}{2\sigma^2} - \frac{\mu\mathbb{E}[x]}{\sigma^2} + \frac{\mu^2}{2\sigma^2} \\
+    &= \log(\sigma) - \frac{1}{2} + \frac{1}{2\sigma^2} - 0 + \frac{\mu^2}{2\sigma^2}
+\end{align*}
+Reorganizando los términos, la forma cerrada de la divergencia KL es:
+\begin{equation}
+    D_{KL}(\mathcal{N} || \tilde{\mathcal{N}}) = \log(\sigma) + \frac{1 + \mu^2}{2\sigma^2} - \frac{1}{2}
+\end{equation}
+
+\subsection*{Subtask B: KL entre Distribuciones de Bernoulli}
+Sean $B_p$ y $B_q$ variables aleatorias de Bernoulli con parámetros $p$ y $q$ respectivamente. 
+La divergencia KL se define sobre el soporte discreto $x \in \{0, 1\}$ como:
+\begin{equation}
+    D_{KL}(B_p || B_q) = \sum_{x \in \{0,1\}} p(x) \log \left( \frac{p(x)}{q(x)} \right)
+\end{equation}
+Evaluando para $x=1$ (éxito) y $x=0$ (fracaso):
+\begin{equation}
+    D_{KL}(B_p || B_q) = p \log \left( \frac{p}{q} \right) + (1 - p) \log \left( \frac{1 - p}{1 - q} \right)
+\end{equation}
+
+\textbf{Verificación de la Simetría Invertida:}
+Calculamos $D_{KL}(B_p || B_{1-p})$:
+\begin{equation*}
+    D_{KL}(B_p || B_{1-p}) = p \log \left( \frac{p}{1-p} \right) + (1 - p) \log \left( \frac{1 - p}{1 - (1-p)} \right) = p \log \left( \frac{p}{1-p} \right) + (1 - p) \log \left( \frac{1 - p}{p} \right)
+\end{equation*}
+Calculamos $D_{KL}(B_{1-p} || B_p)$:
+\begin{equation*}
+    D_{KL}(B_{1-p} || B_p) = (1-p) \log \left( \frac{1-p}{p} \right) + (1 - (1-p)) \log \left( \frac{p}{1-p} \right) = (1-p) \log \left( \frac{1-p}{p} \right) + p \log \left( \frac{p}{1-p} \right)
+\end{equation*}
+Ambas expresiones son algebraicamente idénticas, demostrando que $D_{KL}(B_p || B_{1-p}) = D_{KL}(B_{1-p} || B_p)$.
+
+\textbf{Explicación Conceptual:}
+La divergencia KL mide la "sorpresa" esperada o la cantidad de información perdida al aproximar una distribución con otra. Intercambiar la probabilidad de éxito $p$ por su probabilidad de fracaso $1-p$ (y viceversa) equivale simplemente a "voltear" las etiquetas de lo que llamamos éxito (1) y fracaso (0). Dado que las probabilidades subyacentes mantienen la misma estructura de información, la penalización entrópica por aproximar la moneda original con la invertida es exactamente la misma que aproximar la invertida con la original.
+
+\subsection*{Optional Subtask C: Regiones del Cuadrado Unitario}
+Buscamos describir las regiones en el cuadrado unitario $(p,q) \in [0,1]^2$ donde varía la relación entre $D_{KL}(B_p || B_q)$ y $D_{KL}(B_q || B_p)$.
+Basado en exploración numérica y la naturaleza de la función $f(p,q) = D_{KL}(B_p || B_q) - D_{KL}(B_q || B_p)$:
+\begin{itemize}
+    \item \textbf{Igualdad:} $D_{KL}(B_p || B_q) = D_{KL}(B_q || B_p)$. 
+    Esta condición se cumple trivialmente en la diagonal principal $p = q$. Adicionalmente, por la simetría demostrada en la sub-tarea anterior, también se cumple a lo largo de la diagonal inversa $q = 1 - p$. El conjunto de igualdad forma una "X" en el cuadrado unitario.
+    \item \textbf{Desigualdad $D_{KL}(B_p || B_q) < D_{KL}(B_q || B_p)$:}
+    Esta región ocurre cuando la distribución de aproximación $q$ está más cerca del extremo (0 o 1) que la distribución verdadera $p$. Geométricamente, corresponde a los dos triángulos "izquierdo" y "derecho" formados por las diagonales de la "X", es decir, regiones donde $|q - 0.5| > |p - 0.5|$.
+    \item \textbf{Desigualdad $D_{KL}(B_p || B_q) > D_{KL}(B_q || B_p)$:}
+    Esta región ocurre cuando la distribución verdadera $p$ es más extrema (más cercana a 0 o 1) que la distribución $q$. La penalización de KL es asimétricamente más alta cuando intentamos aproximar un evento casi certero con una probabilidad más incierta. Geométricamente, corresponde a los dos triángulos "superior" e "inferior" de la "X", donde $|p - 0.5| > |q - 0.5|$.
+\end{itemize}
+
+\end{document}
