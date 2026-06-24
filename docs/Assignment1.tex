@@ -1,0 +1,82 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{setspace}
+\usepackage[spanish]{babel}
+\singlespacing
+
+\title{1ra Asignación: Fundamentos de Deep Learning}
+\author{Luis Daniel}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section*{Tarea de Calentamiento: Reflexión sobre Escritura Técnica}
+Después de revisar las \textit{Guías de Trabajo Escrito}, he identificado un defecto significativo en mi escritura matemática actual: la tendencia a presentar largas secuencias de ecuaciones y manipulaciones algebraicas sin integrarlas en oraciones estructuradas lógicamente. Hasta ahora, a menudo trataba las ecuaciones como bloques de texto aislados, obligando al lector a adivinar las transiciones lógicas (como implicaciones, equivalencias o sustituciones). Para superar este problema durante este semestre, implementaré un enfoque sistemático en mi redacción técnica. Primero, me aseguraré de que cada expresión matemática funcione gramaticalmente como un sustantivo, verbo o cláusula dentro de una oración completa. Segundo, definiré explícitamente los dominios y dimensiones de todas las variables y parámetros antes de utilizarlos en las ecuaciones. Por último, utilizaré frases de transición precisas (por ejemplo, ``en consecuencia'', ``sustituyendo la ecuación (1) en (2)'', ``por definición'') para guiar al lector a través del flujo analítico, asegurando que la prosa se mantenga tan rigurosa como la matemática subyacente.
+
+\section*{Tarea I: Redes Feedforward en MNIST}
+
+\subsection*{Sub-Tarea 1: Exploración de Hiperparámetros y Análisis de la Red}
+Para evaluar el rendimiento empírico de una red neuronal prealimentada (feedforward) simple en el conjunto de datos MNIST, se llevaron a cabo varios experimentos variando sistemáticamente la dimensionalidad de las capas ocultas ($\text{dim\_h1\_1}, \text{dim\_h1\_2}$) y el número de épocas de entrenamiento ($\text{num\_epochs}$). Adicionalmente, para abordar la especificación de crédito extra, se implementaron y evaluaron arquitecturas con 1 y 3 capas ocultas frente a la red base de 2 capas ocultas. 
+
+Los resultados experimentales, incluyendo la pérdida de entrenamiento, la precisión de entrenamiento y la precisión de prueba, se resumen en la Tabla \ref{tab:mnist_results}.
+
+\begin{table}[h!]
+\centering
+\caption{Rendimiento Empírico bajo Diferentes Arquitecturas y Épocas}
+\label{tab:mnist_results}
+\begin{tabular}{cccccc}
+\toprule
+\textbf{Capas} & \textbf{Dimensiones Ocultas} & \textbf{Épocas} & \textbf{Pérdida (Ent.)} & \textbf{Precisión (Ent.)} & \textbf{Precisión (Prueba)} \\ \midrule
+1 & [128] & 5 & 0.1425 & 95.82\% & 96.10\% \\ 
+2 (Base) & [64, 32] & 5 & 0.1650 & 95.12\% & 95.35\% \\ 
+2 & [128, 64] & 5 & 0.0982 & 97.11\% & 96.85\% \\ 
+2 & [128, 64] & 10 & 0.0412 & 98.85\% & 97.42\% \\ 
+3 & [128, 64, 32] & 10 & 0.0385 & 98.92\% & 97.15\% \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection*{Análisis de Resultados}
+Los datos empíricos arrojan varias observaciones críticas respecto a la optimización y la capacidad de la red:
+\begin{enumerate}
+    \item \textbf{Impacto del Ancho de Capa (Capacidad):} Expandir las dimensiones ocultas de $[64, 32]$ a $[128, 64]$ sobre un esquema fijo de 5 épocas resultó en una caída significativa en la pérdida de entrenamiento (de $0.1650$ a $0.0982$) y un aumento del $1.5\%$ en la precisión de prueba. Esto confirma que los espacios ocultos de mayor dimensión permiten a la red proyectar características en espacios donde las fronteras no lineales son más fáciles de aprender.
+    \item \textbf{Impacto del Tiempo de Entrenamiento (Épocas):} Duplicar la duración del entrenamiento de 5 a 10 épocas para la arquitectura $[128, 64]$ minimizó aún más la pérdida de entrenamiento a $0.0412$. Sin embargo, la brecha de generalización (la diferencia entre la precisión de entrenamiento y de prueba) se amplió ligeramente del $0.26\%$ al $1.43\%$, ilustrando el inicio de un ligero sobreajuste (overfitting) a medida que los parámetros se ajustan estrictamente a la distribución empírica de entrenamiento.
+    \item \textbf{Variación de Profundidad (Análisis de Crédito Extra):} La red con una sola capa oculta $[128]$ logró una precisión de prueba notablemente competitiva ($96.10\%$), superando a la red más profunda pero más estrecha de $[64, 32]$. Esto sugiere que un ancho adecuado por capa es crucial para la representación inicial. Por el contrario, la red de 3 capas ocultas $[128, 64, 32]$ alcanzó la pérdida de entrenamiento más baja ($0.0385$), pero su precisión de prueba ($97.15\%$) fue menor que su contraparte de 2 capas a 10 épocas ($97.42\%$). Esta degradación marginal en la generalización indica que, sin regularización, aumentar la profundidad más allá de cierto umbral para conjuntos de datos simples como MNIST acelera el sobreajuste sin añadir valor representacional.
+\end{enumerate}
+
+\newpage
+\subsection*{Sub-Tarea 2: Investigación Conceptual --- La Estructura Binaria de \texttt{float32}}
+En los frameworks modernos de aprendizaje profundo, los tensores de datos y los parámetros de la red (pesos y sesgos) se almacenan convencionalmente utilizando el formato de punto flotante de precisión simple, designado como \texttt{float32}. Esta elección representa un equilibrio deliberado entre la precisión numérica, el ancho de banda de la memoria y el rendimiento computacional. Comprender cómo se codifican los números reales dentro de estos 32 bits es esencial para analizar la estabilidad numérica, el desbordamiento inferior (underflow) y superior (overflow) durante la retropropagación del gradiente.
+
+La representación de \texttt{float32} está estrictamente regida por el \textbf{estándar IEEE 754}. Bajo esta especificación, cualquier número real $V$ se representa en formato de signo y magnitud a través de tres componentes binarios distintos asignados a través de un total de 32 bits:
+\begin{itemize}
+    \item \textbf{Signo ($S$):} 1 bit (Bit 31). Determina el signo del número. Si $S = 0$, el número es positivo; si $S = 1$, el número es negativo.
+    \item \textbf{Exponente ($E$):} 8 bits (Bits 30--23). Representa la escala de magnitud utilizando una notación sesgada para permitir exponentes tanto positivos como negativos sin requerir un bit de signo separado para el exponente mismo.
+    \item \textbf{Fracción o Mantisa ($F$):} 23 bits (Bits 22--0). Representa los bits de precisión o los dígitos significativos del número.
+\end{itemize}
+
+\subsubsection*{Formulación Matemática}
+Para los números de punto flotante normalizados, el estándar asume un bit inicial implícito igual a 1 antes del punto binario. Por lo tanto, el valor real $V$ representado por un patrón de bits dado se calcula utilizando la siguiente fórmula algebraica:
+\begin{equation}
+    V = (-1)^S \times \left(1 + \sum_{i=1}^{23} b_{23-i} 2^{-i}\right) \times 2^{(e - 127)}
+\end{equation}
+Donde:
+\begin{itemize}
+    \item $S \in \{0, 1\}$ es el valor del bit de signo.
+    \item $b_j$ representa el valor binario ($0$ o $1$) en el $j$-ésimo índice de la fracción. El término $(1 + \dots)$ representa el significando, donde la parte fraccionaria $f = \sum_{i=1}^{23} b_{23-i} 2^{-i}$ satisface $0 \le f < 1$.
+    \item $e = \sum_{k=0}^{7} b_{23+k} 2^k$ es el valor entero sin signo del campo del exponente de 8 bits, que oscila entre $0$ y $255$.
+    \item El valor $127$ es el \textbf{sesgo del exponente} (bias). Restar 127 a $e$ desplaza el rango del exponente real a $[-126, 127]$, ya que $e=0$ y $e=255$ están reservados para valores especiales (como $\pm 0$, números subnormales, $\pm \infty$ y NaN).
+\end{itemize}
+
+\subsubsection*{Implicaciones para el Entrenamiento de Redes Neuronales}
+Las restricciones matemáticas del formato \texttt{float32} del IEEE 754 dictan directamente los límites de la optimización en el aprendizaje profundo:
+\begin{itemize}
+    \item \textbf{Épsilon de la Máquina ($\epsilon$):} La distancia entre 1.0 y el siguiente flotante representable es $2^{-23} \approx 1.19 \times 10^{-7}$. En consecuencia, cualquier actualización de gradiente o modificación de parámetro menor que esta escala fraccional en relación con la magnitud del peso no puede resolverse, lo que resulta en un aprendizaje estancado.
+    \item \textbf{Limitaciones de Rango:} El valor normalizado representable máximo es aproximadamente $\pm 3.4028 \times 10^{38}$. Si las activaciones o los valores de pérdida escalan exponencialmente más allá de esto (por ejemplo, expansión ilimitada en redes recurrentes), el campo del exponente se satura ($e=255$), proyectando el valor a $\pm\infty$, lo que posteriormente desencadena la propagación catastrófica de \texttt{NaN} durante la retropropagación.
+\end{itemize}
+
+\end{document}
