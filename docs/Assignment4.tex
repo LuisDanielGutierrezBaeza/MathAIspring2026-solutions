@@ -1,0 +1,116 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{setspace}
+\usepackage[spanish]{babel}
+\singlespacing
+
+\title{4ta Asignación: Sesgo-Varianza y Descenso de Gradiente Estocástico}
+\author{Luis Daniel Gutierrez Baeza}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{center}
+\fbox{
+\begin{minipage}{0.9\textwidth}
+\small \textbf{Nota de Integridad Académica:} El planteamiento de las tareas y la estructura del presente documento están fundamentados en el material didáctico del curso \textit{MAT 4953/6973 Mathematical Foundations of AI} (Dr. Eduardo Dueñez, UTSA). Las derivaciones analíticas, análisis de algoritmos y reflexiones expuestas son de elaboración propia.
+\end{minipage}
+}
+\end{center}
+\vspace{0.5cm}
+
+\section*{Tarea de Calentamiento: Reflexión sobre Escritura Técnica}
+Al revisar retrospectivamente mi escritura técnica a lo largo de este semestre, puedo identificar un progreso sustancial en la claridad expositiva al redactar derivaciones probabilísticas complejas. Por ejemplo, al principio del semestre, habría escrito una demostración de la siguiente manera vaga: \textit{"Sacamos el valor esperado del error, entonces la varianza se separa del sesgo porque las variables son independientes y nos queda la fórmula final."} Actualmente, mi redacción ha madurado hacia un estilo más formal y riguroso: \textit{"Aplicando la linealidad del operador esperanza sobre el error cuadrático medio, y dado que el ruido irreducible $\epsilon$ tiene media cero y es independiente de la hipótesis $f(x)$, los términos cruzados se anulan, permitiendo descomponer el error en la suma de la varianza del modelo, el sesgo al cuadrado y la varianza del ruido."} Sin embargo, reconozco que aún debo trabajar en la transición entre el análisis teórico y la interpretación empírica de algoritmos estocásticos; mis descripciones del comportamiento dinámico de los gradientes (como en el método SGD) a veces carecen de la precisión analítica que ya he logrado en la teoría estática.
+
+\section*{Sub-Tarea I: El Compromiso Sesgo-Varianza}
+El principio del \textit{Bias-Variance Tradeoff} es un teorema fundamental en el aprendizaje estadístico que descompone el error esperado de predicción de un modelo en tres fuentes distintas: el sesgo inherente, la varianza del modelo ante perturbaciones en los datos de entrenamiento, y el error irreducible debido al ruido ambiental.
+
+\subsection*{Derivación Analítica de la Descomposición del Error}
+Supongamos que los datos verdaderos son generados por un proceso subyacente determinista $f(x)$ contaminado por un ruido aditivo irreducible $\epsilon \sim \mathcal{N}(0, \sigma^2)$. Observamos la variable objetivo $y = f(x) + \epsilon$. 
+Utilizando un conjunto de entrenamiento aleatorio $D$, entrenamos un modelo que genera una hipótesis estimadora $\hat{f}(x; D)$. Deseamos evaluar el Error Cuadrático Medio (MSE) esperado sobre todas las posibles realizaciones del conjunto de entrenamiento $D$, para un punto de prueba fijo $x$.
+
+El valor esperado del error de predicción es:
+\begin{equation}
+    \mathbb{E}_D\left[ (y - \hat{f}(x; D))^2 \right]
+\end{equation}
+Sustituyendo el proceso generativo $y = f(x) + \epsilon$:
+\begin{equation}
+    = \mathbb{E}_D\left[ (f(x) + \epsilon - \hat{f}(x; D))^2 \right]
+\end{equation}
+Expandiendo el polinomio al cuadrado:
+\begin{equation}
+    = \mathbb{E}_D\left[ (f(x) - \hat{f}(x; D))^2 \right] + \mathbb{E}_D[\epsilon^2] + 2\mathbb{E}_D\left[ \epsilon(f(x) - \hat{f}(x; D)) \right]
+\end{equation}
+Dado que el ruido $\epsilon$ es completamente independiente del conjunto de entrenamiento $D$ y tiene media igual a cero ($\mathbb{E}[\epsilon] = 0$), el término cruzado se cancela. Adicionalmente, por definición, la varianza del ruido irreducible es $\mathbb{E}[\epsilon^2] = \text{Var}(\epsilon) = \sigma^2$. La expresión se reduce a:
+\begin{equation}
+    = \mathbb{E}_D\left[ (f(x) - \hat{f}(x; D))^2 \right] + \sigma^2
+\end{equation}
+Ahora, enfocamos el análisis en el primer término. Sumamos y restamos el valor esperado de la predicción promedio de nuestro modelo, denotada como $\bar{f}(x) = \mathbb{E}_D[\hat{f}(x; D)]$:
+\begin{equation}
+    \mathbb{E}_D\left[ \Big( (f(x) - \bar{f}(x)) + (\bar{f}(x) - \hat{f}(x; D)) \Big)^2 \right]
+\end{equation}
+Expandiendo el binomio, obtenemos:
+\begin{equation}
+    \mathbb{E}_D\left[ (f(x) - \bar{f}(x))^2 \right] + \mathbb{E}_D\left[ (\bar{f}(x) - \hat{f}(x; D))^2 \right] + 2\mathbb{E}_D\left[ (f(x) - \bar{f}(x))(\bar{f}(x) - \hat{f}(x; D)) \right]
+\end{equation}
+Evaluamos la naturaleza matemática de cada componente:
+\begin{itemize}
+    \item \textbf{Término Cruzado:} Puesto que $(f(x) - \bar{f}(x))$ es una constante determinista con respecto a la variable aleatoria $D$, podemos extraerlo de la esperanza. Esto nos deja evaluando la expresión $\mathbb{E}_D[\bar{f}(x) - \hat{f}(x; D)]$, la cual es exactamente cero por la definición de $\bar{f}(x)$. Por tanto, todo el término cruzado se anula de la ecuación.
+    \item \textbf{Sesgo al Cuadrado ($\text{Bias}^2$):} El primer término es el cuadrado de la diferencia entre el valor verdadero determinista y la predicción media de nuestro modelo. Puesto que no depende del muestreo $D$, la esperanza desaparece: $(f(x) - \bar{f}(x))^2$.
+    \item \textbf{Varianza ($\text{Var}$):} El segundo término representa analíticamente la varianza estadística de las predicciones de nuestro estimador $\hat{f}(x; D)$ alrededor de su propia media aritmética esperada a través de las diferentes realizaciones de $D$.
+\end{itemize}
+
+Reuniendo todos los elementos de la derivación, llegamos a la descomposición canónica fundamental:
+\begin{equation}
+    \mathbb{E}\left[ \text{Error} \right] = \text{Bias}^2(\hat{f}(x)) + \text{Var}(\hat{f}(x)) + \sigma^2
+\end{equation}
+Esta formulación demuestra matemáticamente que la minimización absoluta del error exige controlar tanto la rigidez excesiva del modelo (alto sesgo) como la susceptibilidad extrema al ruido del muestreo (alta varianza).
+
+\begin{figure}[h!]
+    \centering
+    % \includegraphics[width=0.6\textwidth]{figures/fig1_bias_variance.png}
+    \caption{Ilustración gráfica del compromiso entre Sesgo y Varianza a medida que incrementa la complejidad del modelo. \textit{Imagen generada por IA mediante el prompt: "A clear, highly academic 2D line graph illustrating the Bias-Variance Tradeoff in Machine Learning. The x-axis should represent 'Model Complexity'..."}}
+    \label{fig:bias_var}
+\end{figure}
+
+\newpage
+\section*{Sub-Tarea II: Descenso de Gradiente Estocástico (SGD)}
+El Descenso de Gradiente es el caballo de batalla de la optimización en redes neuronales profundas. Consideremos una función objetivo o de pérdida parametrizada $\mathcal{L}(\theta)$ sobre un gran conjunto de datos de entrenamiento $D$ de tamaño $N$.
+
+El cálculo analítico completo (Batch Gradient Descent) evalúa el gradiente verdadero evaluando todo el conjunto de entrenamiento de forma simultánea:
+\begin{equation}
+    \theta_{t+1} = \theta_t - \eta \nabla_\theta \mathcal{L}(\theta; D) = \theta_t - \eta \left( \frac{1}{N} \sum_{i=1}^{N} \nabla_\theta \ell_i(\theta; x_i, y_i) \right)
+\end{equation}
+donde $\eta$ es la tasa de aprendizaje escalar (learning rate).
+
+A medida que el tamaño $N$ de los conjuntos de datos modernos se escala hacia millones de ejemplos, el costo computacional de calcular un solo gradiente analítico exacto se vuelve prohibitivo. 
+La aproximación matemática que soluciona esto es el \textbf{Descenso de Gradiente Estocástico (SGD)}, el cual reemplaza el gradiente empírico poblacional con el gradiente ruidoso de una única observación aleatoria (o de un mini-lote de tamaño $b \ll N$).
+
+La regla de actualización para SGD se simplifica a:
+\begin{equation}
+    \theta_{t+1} = \theta_t - \eta \nabla_\theta \ell_k(\theta; x_k, y_k)
+\end{equation}
+donde el índice $k$ se muestrea uniformemente del conjunto de datos $D$.
+
+\subsection*{Análisis Estocástico de la Convergencia}
+La justificación teórica fundamental de por qué SGD logra converger hacia mínimos locales funcionales recae en el hecho de que su gradiente aproximado $\nabla_\theta \ell_k(\theta)$ es un **estimador insesgado** del gradiente poblacional verdadero.
+Tomando el valor esperado del gradiente estocástico sobre la distribución empírica de entrenamiento:
+\begin{equation}
+    \mathbb{E}_{k \sim U(1, N)} [ \nabla_\theta \ell_k(\theta) ] = \sum_{k=1}^{N} \frac{1}{N} \nabla_\theta \ell_k(\theta) = \nabla_\theta \mathcal{L}(\theta)
+\end{equation}
+
+Aunque la dirección individual en cada paso puede ser ruidosa y desviarse significativamente del gradiente óptimo debido a la alta varianza del estimador, la esperanza matemática del algoritmo garantiza que la trayectoria en el hiperespacio se mueva sistemáticamente hacia el descenso a largo plazo. Curiosamente, este ruido estocástico inherente suele ser altamente beneficioso al entrenar redes neuronales profundas. En topologías de error no convexas, la inyección constante de varianza térmica en los gradientes actúa como un mecanismo natural de regularización implícita, ayudando a expulsar el vector de pesos $\theta$ de mínimos locales superficiales y puntos de ensilladura (saddle points), promoviendo la convergencia hacia mínimos mucho más amplios y robustos.
+
+\begin{figure}[h!]
+    \centering
+    % \includegraphics[width=0.6\textwidth]{figures/fig2_sgd.png}
+    \caption{Dinámica de optimización sobre una superficie de pérdida. La trayectoria errática ejemplifica el ruido estocástico introducido por SGD. \textit{Imagen generada por IA mediante el prompt: "A conceptual 3D surface plot demonstrating the Stochastic Gradient Descent (SGD) optimization process. Show a non-convex error surface..."}}
+    \label{fig:sgd}
+\end{figure}
+
+\end{document}
